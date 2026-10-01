@@ -1,7 +1,7 @@
 ---
 title: SpeedNet [Easy] - Hack The Box
 date: 2026-10-01 00:00:00
-description: Writeup tiếng Việt cho lab SpeedNet của Hack The Box, tập trung vào GraphQL, IDOR, reset password và xác thực 2FA.
+description: An English write-up for the Hack The Box SpeedNet lab, covering GraphQL, IDOR, password reset, and 2FA.
 categories:
   - Web Exploit
   - Writeup CTF
@@ -19,38 +19,41 @@ toc: true
 
 # SpeedNet
 
-SpeedNet là một nền tảng ISP. Mục tiêu của bài lab là tận dụng các lỗi trong luồng GraphQL để chiếm quyền truy cập tài khoản quản trị và lấy flag ẩn.
+SpeedNet is an ISP platform. The objective of this lab is to chain several issues in the GraphQL workflow, access the administrator account, and retrieve the hidden flag.
 
-> Môi trường sử dụng trong bài: Hack The Box. Thay `IP:PORT` bằng instance đang chạy của bạn.
+> Environment: Hack The Box. Replace `IP:PORT` with the instance assigned to you.
 
-## 1. Tạo tài khoản test
+## 1. Create a test account
 
-Đầu tiên, đăng ký một tài khoản bằng địa chỉ `test@email.htb`. Dịch vụ email của lab có thể xem tại:
+First, register a test account using `test@email.htb`. The lab email service is available at:
 
 ```text
 http://IP:PORT/emails/
 ```
 
-<img src="../../../../img/SpeedNet/01-profile-settings.png" alt="Profile Settings của tài khoản test trên SpeedNet">
+This is the profile page of the test account during the initial setup. In the screenshot, 2FA is disabled for the test account; the image only illustrates the initial profile interface before testing GraphQL.
 
-Sau khi đăng ký và đăng nhập, mọi request của ứng dụng đều có thể quan sát qua Burp Suite.
-## 2. Xem schema GraphQL bằng extension trong Burp
+<img src="../../../../img/SpeedNet/01-profile-settings.png" alt="SpeedNet Profile Settings for the test account">
 
-Mình sử dụng **InQL - GraphQL Scanner**, một extension của Burp Suite dùng để hỗ trợ kiểm tra các ứng dụng GraphQL. InQL có thể đọc schema/introspection, tạo các query và mutation mẫu, đồng thời cung cấp các chức năng hỗ trợ kiểm thử ngay trong Burp.
+After registering and logging in, requests sent by the application can be inspected through Burp Suite.
 
-Trong Burp, có thể mở request rồi chọn `Extensions -> InQL - GraphQL Scanner -> Generate queries` để tạo danh sách operation từ schema của ứng dụng.
+## 2. Inspect the GraphQL schema with a Burp extension
 
-<img src="../../../../img/SpeedNet/02-inql-extension.png" alt="Menu InQL GraphQL Scanner trong Burp Suite">
+I used **InQL - GraphQL Scanner**, a Burp Suite extension for testing GraphQL applications. InQL can read the schema through introspection, generate sample queries and mutations, and provide additional features for testing directly in Burp.
 
-Sau đó, extension hiển thị các query và mutation mà endpoint GraphQL công khai:
+In Burp, right-click the request and choose `Extensions -> InQL - GraphQL Scanner -> Generate queries` to generate operations from the application schema.
 
-<img src="../../../../img/SpeedNet/02-graphql-schema.png" alt="Danh sách query và mutation GraphQL được hiển thị trong Burp">
+<img src="../../../../img/SpeedNet/02-inql-extension.png" alt="InQL GraphQL Scanner menu in Burp Suite">
 
-Ảnh trên là danh sách operation mà extension thu thập được. Những operation quan trọng trong chuỗi khai thác gồm `userProfile`, `devForgotPassword`, `resetPassword`, `login` và `verifyTwoFactor`.
+The extension then displays the queries and mutations exposed by the GraphQL endpoint:
 
-## 3. IDOR trong truy vấn profile
+<img src="../../../../img/SpeedNet/02-graphql-schema.png" alt="GraphQL queries and mutations displayed in Burp">
 
-Request profile của tài khoản hiện tại sử dụng biến `userId`. Mình thử thay giá trị này thành `1`:
+The important operations in this attack chain are `userProfile`, `devForgotPassword`, `resetPassword`, `login`, and `verifyTwoFactor`.
+
+## 3. IDOR in the profile query
+
+The profile request uses a `userId` variable. I changed its value to `1`:
 
 ```graphql
 query GetUserProfile($userId: Int!) {
@@ -72,13 +75,13 @@ query GetUserProfile($userId: Int!) {
 }
 ```
 
-Response trả về thông tin của tài khoản quản trị, trong đó có email `admin@speednet.htb`. Đây là lỗi IDOR vì server không kiểm tra quyền sở hữu bản ghi trước khi trả dữ liệu profile.
+The response returned the administrator's profile, including the email address `admin@speednet.htb`. This is an IDOR because the server does not verify that the requested profile belongs to the current user.
 
-<img src="../../../../img/SpeedNet/01-profile-idor.png" alt="Truy vấn profile với userId 1 trả về thông tin admin">
+<img src="../../../../img/SpeedNet/01-profile-idor.png" alt="Profile query with userId 1 returning administrator information">
 
-## 4. Lấy reset token qua devForgotPassword
+## 4. Obtain a reset token through devForgotPassword
 
-Trong schema có mutation `devForgotPassword`. Gọi mutation với email admin:
+The schema contains the `devForgotPassword` mutation. I called it with the administrator's email address:
 
 ```graphql
 mutation {
@@ -86,13 +89,13 @@ mutation {
 }
 ```
 
-Response trả trực tiếp reset token trong nội dung phản hồi.
+The response returned the password reset token directly.
 
-<img src="../../../../img/SpeedNet/03-dev-forgot-password.png" alt="devForgotPassword trả trực tiếp reset token">
+<img src="../../../../img/SpeedNet/03-dev-forgot-password.png" alt="devForgotPassword returning the reset token directly">
 
-## 5. Đặt lại mật khẩu admin
+## 5. Reset the administrator password
 
-Dùng token vừa nhận được với mutation `resetPassword` và đặt một mật khẩu mới:
+I used the token with the `resetPassword` mutation and set a new password:
 
 ```graphql
 mutation {
@@ -103,27 +106,27 @@ mutation {
 }
 ```
 
-Khi response xác nhận thành công, có thể dùng email admin và mật khẩu mới để thực hiện mutation `login`.
+After the response confirmed the reset, the administrator email and the new password could be used with the `login` mutation.
 
-<img src="../../../../img/SpeedNet/04-reset-password-success.png" alt="resetPassword thực hiện thành công">
+<img src="../../../../img/SpeedNet/04-reset-password-success.png" alt="Successful resetPassword response">
 
-## 6. Đăng nhập và nhận temporary token 2FA
+## 6. Log in and receive a temporary 2FA token
 
-Vì tài khoản admin bật 2FA, request đăng nhập chưa trả JWT hoàn chỉnh. Thay vào đó, response có dạng:
+Because the administrator account has 2FA enabled, the login request does not return the final JWT immediately. Instead, the response has the following format:
 
 ```text
 2FA_REQUIRED:TEMPORARY_TOKEN
 ```
 
-`TEMPORARY_TOKEN` là token tạm dùng cho mutation `verifyTwoFactor`. Giao diện ứng dụng chuyển sang trang nhập OTP.
+`TEMPORARY_TOKEN` is the temporary token used by the `verifyTwoFactor` mutation. The application then redirects to the OTP input page.
 
-<img src="../../../../img/SpeedNet/05-two-factor-page.png" alt="Trang nhập mã OTP của SpeedNet">
+<img src="../../../../img/SpeedNet/05-two-factor-page.png" alt="SpeedNet two-factor authentication page">
 
-## 7. Kiểm tra OTP bằng GraphQL aliases
+## 7. Test the OTP with GraphQL aliases
 
-### 7.1 Thử gửi nhiều OTP với cùng tên field
+### 7.1 First attempt: use the same field name
 
-Ban đầu, mình thử gọi `verifyTwoFactor` nhiều lần trong cùng một mutation nhưng giữ nguyên tên field:
+At first, I tried calling `verifyTwoFactor` multiple times in the same mutation while keeping the field name unchanged:
 
 ```graphql
 mutation {
@@ -132,15 +135,15 @@ mutation {
 }
 ```
 
-<img src="../../../../img/SpeedNet/07-otp-same-field-conflict.png" alt="GraphQL báo lỗi conflict khi gọi verifyTwoFactor nhiều lần cùng tên field">
+<img src="../../../../img/SpeedNet/07-otp-same-field-conflict.png" alt="GraphQL field conflict when calling verifyTwoFactor multiple times with the same name">
 
-Cách này không phù hợp vì cả hai field đều có cùng response key là `verifyTwoFactor` nhưng lại nhận các argument khác nhau. GraphQL validator báo lỗi conflict. Đây là lúc cần dùng alias.
+This does not work because both fields have the same response key, `verifyTwoFactor`, while using different arguments. The GraphQL validator can reject the operation with a field conflict, and the response cannot distinguish the result of each OTP. This is where aliases are needed.
 
-### 7.2 Dùng GraphQL aliases
+### 7.2 Use GraphQL aliases
 
-GraphQL alias là tên tùy chỉnh đặt trước một field trong operation. Alias cho phép gọi cùng một field nhiều lần trong một request nhưng mỗi lần dùng một tham số khác nhau.
+A GraphQL alias is a custom response name placed before a field. It allows the same field to be requested multiple times in one operation, with different arguments for each request.
 
-Ví dụ, hai lần gọi `verifyTwoFactor` có thể đặt hai alias khác nhau:
+For example, two `verifyTwoFactor` calls can use different aliases:
 
 ```graphql
 mutation {
@@ -149,9 +152,9 @@ mutation {
 }
 ```
 
-Trong response, `otp1000` và `otp1001` là hai key độc lập. Vì vậy, nhiều OTP có thể được gửi trong cùng một GraphQL operation. Alias nào trả về object có trường `token` là alias tương ứng với OTP đúng.
+In the response, `otp1000` and `otp1001` are independent keys. This makes it possible to submit many OTP values in a single GraphQL operation. The alias whose value contains a `token` field identifies the correct OTP.
 
-Đoạn script dưới đây chia khoảng kiểm tra thành các batch và tạo một alias cho từng OTP. Thay `TOKEN_MOI_SAU_LOGIN` bằng temporary token nhận được sau khi đăng nhập:
+The following script divides the search space into batches and creates one alias for each OTP. Replace `TOKEN_MOI_SAU_LOGIN` with the temporary token received after login:
 
 ```javascript
 (async () => {
@@ -193,17 +196,21 @@ ${Array.from({ length: end - start + 1 }, (_, i) => {
 })();
 ```
 
-<img src="../../../../img/SpeedNet/06-otp-bruteforce-script.png" alt="Script tạo nhiều GraphQL aliases để kiểm tra OTP">
+<img src="../../../../img/SpeedNet/06-otp-bruteforce-script.png" alt="Script creating GraphQL aliases to test OTP values">
 
-Kết quả cuối cùng tìm được của mã OTP và JWT:
+The final result from the instance used in this write-up was:
 
-<img src="../../../../img/SpeedNet/07-admin-otp-jwt.png" alt="OTP 1628 và JWT tương ứng">
+- Temporary token: starts with `6d2e...`
+- Correct OTP: `1628`
+- JWT: returned in the output and shown in full in the screenshot.
 
-JWT trong output này là token sau khi hoàn tất xác thực 2FA. Có thể dùng nó cho các request GraphQL yêu cầu phiên đăng nhập quản trị.
+<img src="../../../../img/SpeedNet/07-admin-otp-jwt.png" alt="OTP 1628 and the corresponding JWT">
 
-## 8. Truy cập endpoint billing
+The JWT in this output is the token issued after completing 2FA. It can be used for GraphQL requests that require an authenticated administrator session.
 
-Sau khi xác thực admin thành công, truy cập endpoint `/billing`. Request GraphQL dùng để đọc lịch sử hóa đơn là:
+## 8. Access the billing endpoint
+
+After completing administrator authentication, access the `/billing` endpoint. The GraphQL request used to read the invoice history is:
 
 ```json
 {
@@ -211,11 +218,9 @@ Sau khi xác thực admin thành công, truy cập endpoint `/billing`. Request 
 }
 ```
 
-Response của `invoiceHistory` chứa flag trong dữ liệu hóa đơn, cụ thể ở trường `number` của bản ghi tương ứng.
+The `invoiceHistory` response contains the flag in the invoice data, specifically in the `number` field of the matching record.
 
-Ảnh dưới đây là response thực tế của request trên. Bản ghi có trường `number` chứa flag của bài:
-
-<img src="../../../../img/SpeedNet/08-billing-flag.png" alt="Response invoiceHistory chứa flag trong trường number">
+<img src="../../../../img/SpeedNet/08-billing-flag.png" alt="invoiceHistory response containing the flag in the number field">
 
 ## Flag
 
@@ -223,14 +228,14 @@ Response của `invoiceHistory` chứa flag trong dữ liệu hóa đơn, cụ t
 HTB{gr4phql_3xpl01t_1n_a_nutsh3ll}
 ```
 
-## Tổng kết
+## Summary
 
-Chuỗi khai thác của SpeedNet gồm:
+The SpeedNet attack chain was:
 
-1. IDOR cho phép đọc profile admin bằng cách thay `userId`.
-2. `devForgotPassword` làm lộ reset token.
-3. Reset mật khẩu và đăng nhập tài khoản admin.
-4. GraphQL aliases cho phép gửi nhiều lần kiểm tra OTP trong một operation.
-5. JWT sau 2FA được dùng để truy cập `/billing` và lấy flag.
+1. Use the IDOR to read the administrator profile by changing `userId`.
+2. Use `devForgotPassword` to expose a password reset token.
+3. Reset the password and log in as the administrator.
+4. Use GraphQL aliases to test multiple OTP values in one operation.
+5. Use the JWT issued after 2FA to access `/billing` and retrieve the flag.
 
-Các lỗi này cần được khắc phục bằng kiểm tra phân quyền ở resolver, không trả token nhạy cảm trong response, giới hạn tần suất OTP và kiểm soát chặt chẽ luồng 2FA.
+The application should enforce authorization in each resolver, never return sensitive tokens directly, rate-limit OTP verification, and strictly control the 2FA flow.
