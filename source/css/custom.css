@@ -1,0 +1,20 @@
+/* Home title: show Ace instead of full site title */
+#page-header.full_page #site-title {
+  font-size: 0 !important;
+}
+
+#page-header.full_page #site-title::after {
+  content: "Ace";
+  font-size: 2.85rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+#footer,
+#footer #footer-wrap,
+#footer::before {
+  background: transparent !important;
+}
+
+#footer::before{
+  opacity: 0 !important;
+}
