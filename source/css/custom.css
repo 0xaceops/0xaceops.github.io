@@ -20,25 +20,25 @@
 }
 
 /* Add terminal-style accents to shell transcripts in write-ups. */
-figure.highlight.bash {
+figure.highlight.shell {
   border-inline-start: 3px solid #58a6ff;
 }
 
-#article-container figure.highlight.bash .code pre > span.line:nth-of-type(1) {
+#article-container figure.highlight.shell .code pre > span.line:nth-of-type(1) {
   color: #7ee787 !important;
 }
 
-#article-container figure.highlight.bash .code pre > span.line:nth-of-type(2) {
+#article-container figure.highlight.shell .code pre > span.line:nth-of-type(2) {
   color: #79c0ff !important;
 }
 
-#article-container figure.highlight.bash:first-of-type .code pre > span.line:nth-of-type(8),
-#article-container figure.highlight.bash:first-of-type .code pre > span.line:nth-of-type(12),
-#article-container figure.highlight.bash:first-of-type .code pre > span.line:nth-of-type(17) {
+#article-container figure.highlight.shell:first-of-type .code pre > span.line:nth-of-type(8),
+#article-container figure.highlight.shell:first-of-type .code pre > span.line:nth-of-type(12),
+#article-container figure.highlight.shell:first-of-type .code pre > span.line:nth-of-type(17) {
   color: #a6e3a1 !important;
   font-weight: 700;
 }
 
-#article-container figure.highlight.bash:first-of-type .code pre > span.line:nth-of-type(13) {
+#article-container figure.highlight.shell:first-of-type .code pre > span.line:nth-of-type(13) {
   color: #f9c74f !important;
 }
