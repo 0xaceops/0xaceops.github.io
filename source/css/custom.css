@@ -24,10 +24,21 @@ figure.highlight.bash {
   border-inline-start: 3px solid #58a6ff;
 }
 
-figure.highlight.bash .code pre .line:nth-of-type(1) {
-  color: #7ee787;
+#article-container figure.highlight.bash .code pre > span.line:nth-of-type(1) {
+  color: #7ee787 !important;
 }
 
-figure.highlight.bash .code pre .line:nth-of-type(2) {
-  color: #79c0ff;
+#article-container figure.highlight.bash .code pre > span.line:nth-of-type(2) {
+  color: #79c0ff !important;
+}
+
+#article-container figure.highlight.bash:first-of-type .code pre > span.line:nth-of-type(8),
+#article-container figure.highlight.bash:first-of-type .code pre > span.line:nth-of-type(12),
+#article-container figure.highlight.bash:first-of-type .code pre > span.line:nth-of-type(17) {
+  color: #a6e3a1 !important;
+  font-weight: 700;
+}
+
+#article-container figure.highlight.bash:first-of-type .code pre > span.line:nth-of-type(13) {
+  color: #f9c74f !important;
 }
